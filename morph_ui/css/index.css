@@ -6,6 +6,8 @@
     margin: 10px 5px;
     display: inline-block;
     cursor: pointer;
+    background-color: #FFFF00;
+
 }
 
 .color-selected {
@@ -14,8 +16,85 @@
 
 body {
     margin: 20px;
+    text-align: center;
+    max-width: 800px;
+    margin: auto;
 }
 
 .selected-segment {
     background-color: #FFFF00;
 }
+
+.color0{
+    background-color: #fff;
+}
+
+.color1{
+    background-color: #4bef4c;
+}
+
+.color2{
+    background-color: #1B1EED;
+}
+
+.color3{
+    background-color: #C31BED;
+}
+
+.color4{
+    background-color: #F7070B;
+}
+
+.color5{
+    background-color: #FFFF00;
+}
+
+.color6{
+    background-color: #000;
+}
+
+.photo{
+    /* max-width: 300px;
+    max-height: 300px; */
+    width: min-content;
+    height: min-content;
+    margin: 0 auto;
+}
+
+.two-col{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.two-col p{
+    text-align: left;
+}
+
+.col{
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    width: 50%;
+}
+
+.col p{
+    margin: 0.1em 0em;
+}
+
+.no-select{
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.remove{
+    color: red;
+    cursor: pointer;
+    margin-left: -15px;
+}
+
+

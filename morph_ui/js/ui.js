@@ -1,54 +1,53 @@
-function getColorValue(colorIndex) {
-    // random colors, change numColors in loadColorPicker when adding/substracting colors
-    //var colors = ["#000", "#3FBF3F", "#1B1EED", "#C31BED", "#F7070B", "#FFFF00", "#fff"];
-    var colors = ["#000", "#4bef4c", "#1B1EED", "#C31BED", "#F7070B", "#FFFF00", "#fff"];
-    return colors[colorIndex];
+function drawArrow(ctx, color, fromx, fromy, tox, toy){
+    //variables to be used when creating the arrow
+    const w = 3;
+    const headlen = 6;
+
+    var angle = Math.atan2(toy-fromy,tox-fromx);
+    
+    //starting path of the arrow from the start square to the end square and drawing the stroke
+    ctx.beginPath();
+    ctx.moveTo(fromx, fromy);
+    ctx.lineTo(tox, toy);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = w;
+    ctx.stroke();
+    
+    // starting a new path from the head of the arrow to one of the sides of the point
+    ctx.beginPath();
+    ctx.moveTo(tox, toy);
+    ctx.lineTo(tox-headlen*Math.cos(angle-Math.PI/7),toy-headlen*Math.sin(angle-Math.PI/7));
+    
+    //path from the side point of the arrow, to the other side point
+    ctx.lineTo(tox-headlen*Math.cos(angle+Math.PI/7),toy-headlen*Math.sin(angle+Math.PI/7));
+    
+    //path from the side point back to the tip of the arrow, and then again to the opposite side point
+    ctx.lineTo(tox, toy);
+    ctx.lineTo(tox-headlen*Math.cos(angle-Math.PI/7),toy-headlen*Math.sin(angle-Math.PI/7));
+
+    //draws the paths created above
+    ctx.strokeStyle = color;
+    ctx.lineWidth = w;
+    ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.fill();
+
 }
 
-function createColor(colorIndex) {
-    var $div = $("<div>", {"class": "color-box", "id": "color-"+colorIndex});
-    $div.css("background-color", getColorValue(colorIndex));
-    $div.click(function(){
-        if (!$(this).hasClass("color-selected")) {
-            $(".color-selected").removeClass("color-selected");
-            $(this).addClass("color-selected");
-        }
-    });
-    return $div;
-}
 
-function loadColorPicker() {
-    var numColors = 7;
-    for (var i=0; i<numColors; i++) {
-        $("#segment-color-picker").append(createColor(i));
+var selectedColor = "#fff"
+
+function initColorPicker(){
+    for(element of document.getElementsByClassName("color-box")){
+        element.addEventListener("click", function(){
+            if(!this.classList.contains("color-selected")){
+                for(selected of document.getElementsByClassName("color-selected"))
+                    selected.classList.remove('color-selected')
+                this.classList.add('color-selected');
+                selectedColor = window.getComputedStyle(this).backgroundColor;
+            }
+        });
     }
-    // select red as the default start 
-    $("#color-4").click();
-}
-
-
-function getSelectedColorValueVariable(lineNum) {
-  //variable color with each line (can be a bit confusing)
-  var col = getSelectedColorValue();
-  var rgb = Raphael.getRGB(col);
-  var hsb = Raphael.rgb2hsb(rgb.r, rgb.g, rgb.b);
-  var clow = 0.09; // ~10 colors
-  if(hsb.b < 0.5) {
-    var delta = clow;
-  } else{
-    var delta = -clow;
-  }
- 
-  var v = hsb.b + delta * lineNum % 1.;
-  if (v < clow) {
-      v = hsb.b;
-  } 
-  return Raphael.hsb2rgb(hsb.h, hsb.s, v);
-}
-
-function getSelectedColorValue() {
-    var idOffset = "color-".length;
-    return getColorValue($(".color-selected").attr("id").substring(idOffset));
 }
 
 function writeCppSegment(s, Px,Py,Qx,Qy, segNum) {
@@ -58,213 +57,129 @@ function writeCppSegment(s, Px,Py,Qx,Qy, segNum) {
     // return s;
 }
 
-function getPos(e) {
-    var posx = 0;
-    var posy = 0;
-    if (!e) e = window.event;
-    if (e.pageX || e.pageY) 	{
-        posx = e.pageX;
-        posy = e.pageY;
-    }
-    else if (e.clientX || e.clientY) 	{
-        posx = e.clientX + document.body.scrollLeft +
-            document.documentElement.scrollLeft;
-        posy = e.clientY + document.body.scrollTop +
-            document.documentElement.scrollTop;
-    }
-    posx = Math.round(posx - offset.left);
-    posy = Math.round(posy - offset.top);
+var imagewidth  = 0;
+var imageheight = 0;
+const image1 = new Image();
+image1.onload = function() {
+    imagewidth  = image1.width;
+    imageheight = image1.height;
+    leftCanvas.width = this.width;
+    leftCanvas.height = this.height;
+    leftCtx.drawImage(image1,0,0);
+    
+};
+image1.src = path1;
 
-    return [posx,posy];
+const image2 = new Image();
+image2.onload = function() {
+    rightCanvas.width = this.width;
+    rightCanvas.height = this.height;
+    rightCtx.drawImage(image2,0,0);
+}
+image2.src = path2;
+
+initColorPicker();
+
+const leftCanvas = document.getElementById("left-canvas");
+const leftCtx = leftCanvas.getContext("2d");
+const leftStack = [image1]
+const leftTable = document.getElementById("left-table")
+
+const rightCanvas = document.getElementById("right-canvas");
+const rightCtx = rightCanvas.getContext("2d");
+const rightStack = [image2]
+
+function getMousePos(canvas, evt) {
+    var rect = canvas.getBoundingClientRect();
+    return {
+      x: evt.clientX - rect.left,
+      y: evt.clientY - rect.top
+    };
 }
 
-$('document').ready( function() {
-    loadColorPicker();
+function drawStack(ctx, width, height, stack){
+    ctx.clearRect(0, 0, width, height);
+    ctx.drawImage(stack[0],0,0);
+    for(let i=1;i<stack.length;i++){
+        const line = stack[i]
+        ctx.beginPath();
+        ctx.fillStyle = line.color;
+        ctx.arc(line.start.x, line.start.y, RADIUS, 0, 2*Math.PI);
+        ctx.fill();
 
-    imagewidth  = 0;
-    imageheight = 0;
-    cornerx1=10;
-    cornery=10;
-
-    var img = new Image();
-    img.src = path1;
-    img.onload = function() {
-        imagewidth  = img.width;
-        imageheight = img.height;
-        console.log(imagewidth, imageheight);
-
-        column_width = Math.max(imageheight*1.5, 500);
-        cornerx2= cornerx1+column_width;
-        
-        //paper = Raphael(document.getElementById("canvas"), 2*column_width, imageheight);
-        paper = Raphael(document.getElementById("canvas"), 2*(column_width + cornerx1), cornery + imageheight);
-        //paper = Raphael(document.getElementById("canvas"), cornerx1+space+imagewidth1+imagewidth2, cornery+Math.max(imageheight1, imageheight2));
-
-        lastx1=0;
-        lasty1=0;
-        count1=0;
-        var selectedPoints1 = [];
-
-        lastx2=0;
-        lasty2=0;
-        count2=0;
-        var selectedPoints2 = [];
-
-
-        offset = ($("#canvas").offset());
-        console.log(offset.left);
-        console.log(offset.top);
-        $("#seg1_cell").width(column_width);
-
-        function draw1(e) {
-            var pos = getPos(e);
-            var posx = pos[0];
-            var posy = pos[1];
-            //segment start = circle, end = rectangle
-            if (count1%2>0) {
-              //var ci=paper.rect(posx-4,posy-4,8,8).attr({fill: getSelectedColorValueVariable(count1 - 1)});
-              var ci=paper.rect(posx-4,posy-4,8,8).attr({fill: getSelectedColorValue()});
-            } else {
-              //var ci=paper.circle(posx,posy, 5).attr({fill: getSelectedColorValueVariable(count1)});
-              var ci=paper.circle(posx,posy, 5).attr({fill: getSelectedColorValue()});
-            }
-            if (count1%2>0) {
-                //var path = paper.path("M"+lastx1+" "+lasty1+" L"+posx+" "+posy)
-                  //.attr({stroke: getSelectedColorValueVariable(count1 - 1)});
-                var path = paper.path("M"+lastx1+" "+lasty1+" L"+posx+" "+posy)
-                  .attr({stroke: getSelectedColorValue()});
-                var $segmentSpan = writeCppSegment("segsBefore", lastx1-cornerx1, lasty1-cornery, posx-cornerx1, posy-cornery);
-                var $break = $("<br>");
-                $("#seg1").append($segmentSpan).append($break);
-
-                // highlight corresponding line of code on hover of the segment
-                ci.hover(function() {
-                    $segmentSpan.addClass("selected-segment");
-                }, function() {
-                    $segmentSpan.removeClass("selected-segment");
-                });
-                ci.prev.hover(function() {
-                    $segmentSpan.addClass("selected-segment");
-                }, function() {
-                    $segmentSpan.removeClass("selected-segment");
-                });
-                path.hover(function() {
-                    $segmentSpan.addClass("selected-segment");
-                }, function() {
-                    $segmentSpan.removeClass("selected-segment");
-                });
-
-                function removeSegment(ci, path) {
-                    $segmentSpan.remove();
-                    $break.remove();
-                    ci.prev.remove();
-                    ci.remove();
-                    path.remove();
-                    count1 -= 2;
-                }
-                // update double click triggers
-                // trigger deletion of entire segment when double clicking anywhere on it
-                ci.dblclick(function() { 
-                    removeSegment(this, path); 
-                });
-                ci.prev.dblclick(function(event) {
-                    removeSegment(ci, path);
-                });
-                path.dblclick(function(event) {
-                    removeSegment(ci, this);
-                });
-            } else {
-                // double click triggers removal of single point
-                ci.dblclick(function() {
-                    // don't execute this if the point is already part of a line segment
-                    if (this.next === null) {
-                        this.remove();
-                        count1 -= 1;
-                    }
-                });
-            }
-            lastx1 = posx;
-            lasty1 = posy;
-            count1 = count1+1;
+        if(line.end){
+            drawArrow(ctx, line.color, line.start.x, line.start.y, line.end.x, line.end.y)
         }
+    }
+}
+const RADIUS = 4
 
-        function draw2(e) {
-            var pos = getPos(e);
-            var posx = pos[0];
-            var posy = pos[1];
-            //segment start = circle, end = rectangle
-            if (count2%2>0) {
-              //var ci=paper.rect(posx-4,posy-4,8,8).attr({fill: getSelectedColorValueVariable(count2 - 1)});
-              var ci=paper.rect(posx-4,posy-4,8,8).attr({fill: getSelectedColorValue()});
-            } else {
-              //var ci=paper.circle(posx,posy, 5).attr({fill: getSelectedColorValueVariable(count2)});
-              var ci=paper.circle(posx,posy, 5).attr({fill: getSelectedColorValue()});
-            }
-            if (count2%2>0){
-                //overwrite the end-point for segment end
-                //var path = paper.path("M"+lastx2+" "+lasty2+" L"+posx+" "+posy)
-                  //.attr({stroke: getSelectedColorValueVariable(count2 - 1)});
-                var path = paper.path("M"+lastx2+" "+lasty2+" L"+posx+" "+posy)
-                  .attr({stroke: getSelectedColorValue()});
-                var $segmentSpan =  writeCppSegment("segsAfter", lastx2-cornerx2, lasty2-cornery, posx-cornerx2, posy-cornery);
-                var $break = $("<br>");
-                $("#seg2").append($segmentSpan).append($break);
+leftCanvas.addEventListener("mousemove", function(e){
+    const stack = leftStack
+    const ctx = this.getContext("2d");
+    drawStack(ctx, this.width, this.height, leftStack)
 
-                // highlight corresponding line of code on hover of the segment
-                ci.hover(function() {
-                    $segmentSpan.addClass("selected-segment");
-                }, function() {
-                    $segmentSpan.removeClass("selected-segment");
-                });
-                ci.prev.hover(function() {
-                    $segmentSpan.addClass("selected-segment");
-                }, function() {
-                    $segmentSpan.removeClass("selected-segment");
-                });
-                path.hover(function() {
-                    $segmentSpan.addClass("selected-segment");
-                }, function() {
-                    $segmentSpan.removeClass("selected-segment");
-                });
-
-                function removeSegment(ci, path) {
-                    $segmentSpan.remove();
-                    $break.remove();
-                    ci.prev.remove();
-                    ci.remove();
-                    path.remove();
-                    count2 -= 2;
-                }
-
-                // update double click triggers
-                // trigger deletion of entire segment when double clicking anywhere on it
-                ci.dblclick(function() { 
-                    removeSegment(this, path); 
-                });
-                ci.prev.dblclick(function(event) {
-                    removeSegment(ci, path);
-                });
-                path.dblclick(function(event) {
-                    removeSegment(ci, this);
-                });
-            } else {
-                // double click triggers removal of single point
-                ci.dblclick(function() {
-                    // don't execute this if the point is already part of a line segment
-                    if (this.next === null) {
-                        this.remove();
-                        count2 -= 1;
-                    }
-                });
-            }
-            lastx2=posx;
-            lasty2=posy;
-            count2=count2+1;
-        }
-
-        var bfg=paper.image(path1, cornerx1, cornery, imagewidth, imageheight);
-        bfg.click(draw1);
-        var bfg2=paper.image(path2, cornerx2, cornery, imagewidth, imageheight);
-        bfg2.click(draw2);
+    const rect = this.getBoundingClientRect();
+    const pos = {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
     };
+    ctx.fillStyle = selectedColor;
+
+    if(stack.length==1 || stack[stack.length-1].end){
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, RADIUS, 0, 2*Math.PI);
+        ctx.fill();
+    }
+    else{
+        const last = stack[stack.length-1];
+        drawArrow(ctx, last.color, last.start.x, last.start.y, pos.x, pos.y)
+    }
+
+})
+
+leftCanvas.addEventListener("click", function(e){
+    const stack = leftStack
+    const rect = this.getBoundingClientRect();
+    const pos = {
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    };
+    //check if the last line input is complete
+    if(stack.length==1 || stack[stack.length-1].end){
+        stack.push({
+            start:{
+                x: pos.x,
+                y: pos.y
+            },
+            color: selectedColor 
+        })
+    }
+    else{
+        stack[stack.length-1].end = {
+            x: pos.x,
+            y: pos.y
+        }
+        const last = stack[stack.length-1];
+        addLineLog(leftTable, 'segsBefore', last.start.x, last.start.y, last.end.x, last.end.y)
+    }
+})
+
+leftCanvas.addEventListener("mouseout", function(){
+    const stack = leftStack
+    if(!(stack.length==1 || stack[stack.length-1].end)){
+        stack.splice(-1)
+    }
+    const ctx = this.getContext("2d");
+    drawStack(ctx, this.width, this.height, leftStack)
 });
+
+
+function addLineLog(div, prefix, startX, startY, endX, endY){
+    const p = document.createElement('p')
+    p.innerText = `${prefix}.push_back(Segment(Vec2f(${startX}, ${startY}), Vec2f(${endX}, ${endY})));`
+    p.innerHTML = `
+        <span class="no-select remove">&#10006;</span>
+    ` + p.innerHTML;
+    div.appendChild(p)
+}

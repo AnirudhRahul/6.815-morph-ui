@@ -3,26 +3,10 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <title>Morph UI</title>
-    <script src="morph_ui/js/jquery.min.js"></script>
-    <script src="morph_ui/js/raphael-min.js"></script>
-    <script src="morph_ui/js/ui.js"></script>
     <script>
         // Change this to points to your image
         path1       = 'Input/fredo2.png';
         path2       = 'Input/werewolf.png';
-
-        // ----- Don't change what's below --------
-        imagewidth  = 0;
-        imageheight = 0;
-        var img = new Image;
-        img.onload = function() {
-        imagewidth  = img.width;
-        imageheight = img.height;
-        console.log(imagewidth, imageheight);
-        };
-
-        img.src = path1;
-
     </script>
     <link rel="stylesheet" href="morph_ui/css/index.css">
 </head>
@@ -31,6 +15,13 @@
     <div>
         <span>Select a color for the segment (different segments can have different colors):</span>
         <div id="segment-color-picker">
+            <div class="color-box color0 color-selected"></div>
+            <div class="color-box color1"></div>
+            <div class="color-box color2"></div>
+            <div class="color-box color3"></div>
+            <div class="color-box color4"></div>
+            <div class="color-box color5"></div>
+            <div class="color-box color6"></div>
         </div>
     </div>
     <br>
@@ -48,16 +39,35 @@
             <li>Hover over a segment to highlight the corresponding code.</li>
         </ul>
     </div>
-    <div id="canvas">
+
+    <div class="two-col">
+
+        <div class="col" id="left-table">
+            <canvas id="left-canvas" class="photo"></canvas>
+            <div>vector&lt;Segment&gt; segsBefore; </div>
+
+        </div>
+
+        <div class="col" id="right-table">
+            <canvas id="right-canvas" class="photo"></canvas>
+            <div>vector&lt;Segment&gt; segsAfterzd; </div>
+
+        </div>
+
     </div>
-    <table border="0">
+    
+
+
+    <!-- <table>
         <tr>
-            <td id="seg1_cell"><p id="seg1">vector&lt;Segment&gt; segsBefore;<br /> </p></td>
-            <td><p id="seg2">vector&lt;Segment&gt; segsAfter;<br /> </p></td>
+            <td id="seg1_cell"></td>
+            <td></td>
         </tr>
-    </table>
-    <p id="debug"></p>
-    <p>
+    </table> -->
+
+    
+
+
     (Fall 2017)<br/>
     Improved UI Courtesy of<br/>
     <strong>Czarina A Lao</strong> for the overall approach, color selection, highlighting segments and delete segment features<br/>
@@ -65,4 +75,8 @@
     <strong>TAs</strong> for combining the features and incorporating them to the assignment
     </p>
 </body>
+
+
+<script src="morph_ui/js/ui.js"></script>
+
 </html>
